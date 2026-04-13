@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin panel</h2>
+
+{% if can_manage_master_controls %}
+<section>
+  <h3>Registration</h3>
+  <form action="{{ url_for('toggle_registration') }}" method="post">
+    <input type="hidden" name="action" value="{{ 'off' if registration_enabled else 'on' }}">
+    <button type="submit">{{ 'Disable' if registration_enabled else 'Enable' }} registration</button>
+  </form>
+</section>
+
+<section>
+  <h3>Create user</h3>
+  <form action="{{ url_for('create_user') }}" method="post">
+    <input name="username" placeholder="username" required>
+    <input type="password" name="password" placeholder="password" required>
+    <select name="role">
+      <option value="user">user</option>
+      <option value="admin">admin</option>
+    </select>
+    <button type="submit">Create</button>
+  </form>
+</section>
+{% endif %}
+
+<table>
+  <thead>
+    <tr><th>ID</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.role }}</td>
+        <td>{{ user.status }}</td>
+        <td class="row">
+          {% if user.status == 'active' %}
+          <form action="{{ url_for('archive_user', user_id=user.id) }}" method="post" data-confirm="Archive user?">
+            <button type="submit">Archive</button>
+          </form>
+          {% else %}
+          <form action="{{ url_for('restore_user', user_id=user.id) }}" method="post" data-confirm="Restore user?">
+            <button type="submit">Restore</button>
+          </form>
+          {% endif %}
+          <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" data-confirm="Delete user permanently?">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

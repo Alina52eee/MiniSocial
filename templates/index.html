@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="feed-header">
+  <nav>
+    <a class="{{ 'active' if feed_type == 'newest' else '' }}" href="{{ url_for('feed_newest') }}">Newest</a>
+    <a class="{{ 'active' if feed_type == 'trending' else '' }}" href="{{ url_for('feed_trending') }}">Trending</a>
+  </nav>
+  {% if current_user.is_authenticated %}
+    <button id="open-compose">Create post</button>
+  {% else %}
+    <p>Log in to create posts and like.</p>
+  {% endif %}
+</header>
+
+<div id="compose-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="row compose-head">
+      <h3>Create post</h3>
+      <button type="button" id="close-compose-x" aria-label="Close">X</button>
+    </div>
+    <form id="compose-form" action="{{ url_for('create_post') }}" method="post" enctype="multipart/form-data">
+      <textarea id="post-content" name="content" maxlength="{{ max_post_content_length }}" required></textarea>
+      <p><span id="char-count">0</span>/{{ max_post_content_length }}</p>
+      <div class="row">
+        <button type="button" id="add-gallery-file">Add file</button>
+        <button type="button" id="add-gallery-url">Add URL</button>
+        <button type="button" id="add-gallery-draw">Draw 8x8</button>
+        <button type="button" id="open-emoji">Emoji</button>
+      </div>
+      <div id="emoji-popover" class="hidden"></div>
+      <div id="gallery-list"></div>
+      <button type="submit" id="submit-compose">Отправить</button>
+      <button type="button" id="close-compose">Close</button>
+    </form>
+  </div>
+</div>
+
+{% for post in posts %}
+<article class="post">
+  <div class="post-head">
+    {% if post.author_state == 'deleted' %}
+      <strong>user deleted</strong>
+    {% elif post.author_state == 'archived' %}
+      <strong>{{ post.author_name_snapshot or "archived" }} (archived)</strong>
+    {% else %}
+      <strong>{{ post.author_username or post.author_name_snapshot or "unknown" }}</strong>
+      {% if post.author_id and post.author_has_avatar %}
+        <img class="avatar tiny" src="{{ url_for('user_avatar', user_id=post.author_id) }}" alt="avatar">
+      {% endif %}
+    {% endif %}
+  </div>
+  <p>{{ post.content }}</p>
+
+  {% if post.gallery %}
+  <div class="gallery gallery-{{ post.gallery|length }}">
+    {% for img in post.gallery %}
+      {% if img.has_blob %}
+        <img class="lightbox-item" src="{{ url_for('post_image', post_id=post.id, slot=img.position) }}" alt="post image">
+      {% elif img.image_url %}
+        <img class="lightbox-item" src="{{ img.image_url }}" referrerpolicy="no-referrer" alt="external image">
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <small>
+    {{ post.created_at }}
+    {% if feed_type == 'trending' %} | score {{ post.trending_score }}{% endif %}
+  </small>
+  <div class="row">
+    {% if current_user.is_authenticated %}
+      <form class="like-form" action="{{ url_for('like_post', post_id=post.id) }}" method="post" data-post-id="{{ post.id }}">
+        <button type="submit" class="like-btn">{{ "Unlike" if post.liked_by_current_user else "Like" }}</button>
+        <span class="like-count">{{ post.likes }}</span>
+      </form>
+      {% if current_user.role in ["admin", "master"] or current_user.id == post.author_id %}
+        <form action="{{ url_for('delete_post', post_id=post.id) }}" method="post" data-confirm="Delete this post?">
+          <button type="submit">Delete</button>
+        </form>
+      {% endif %}
+    {% else %}
+      <span>Likes: {{ post.likes }}</span>
+    {% endif %}
+  </div>
+</article>
+{% else %}
+  <p>No posts yet.</p>
+{% endfor %}
+{% endblock %}

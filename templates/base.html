@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiniSocial</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    (function () {
+      const saved = localStorage.getItem("minisocial-theme");
+      if (saved === "dark") document.documentElement.classList.add("dark-mode");
+    })();
+  </script>
+</head>
+<body>
+  <aside class="sidebar">
+    <h1>MiniSocial</h1>
+    {% if current_user.is_authenticated %}
+      <div class="user-card">
+        {% if current_user.id %}
+          <img class="avatar" src="{{ url_for('user_avatar', user_id=current_user.id) }}" alt="avatar" onerror="this.replaceWith(document.createTextNode('avatar: none'));">
+        {% endif %}
+        <p>@{{ current_user.username }} ({{ current_user.role }})</p>
+      </div>
+      <form id="avatar-upload-form" action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="avatar" id="avatar-input" accept="image/png">
+      </form>
+      <button type="button" id="open-avatar-editor">Draw avatar 8x8</button>
+      <a href="{{ url_for('feed_newest') }}">Feed</a>
+      {% if current_user.role in ["admin", "master"] %}
+        <a href="{{ url_for('admin_page') }}">Admin</a>
+      {% endif %}
+      <form action="{{ url_for('logout') }}" method="post"><button>Log out</button></form>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-checked="false" aria-label="Переключить тему">Тема: светлая</button>
+  </aside>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for category, message in messages %}
+            <li class="flash {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="pixel-editor-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Pixel editor 8x8</h3>
+      <canvas id="pixel-canvas" width="256" height="256"></canvas>
+      <input type="color" id="pixel-color" value="#000000">
+      <div class="row">
+        <button type="button" id="pixel-clear">Clear</button>
+        <button type="button" id="pixel-save">Save PNG</button>
+        <button type="button" id="pixel-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden">
+    <button type="button" id="lightbox-prev">&lt;</button>
+    <img id="lightbox-image" alt="preview">
+    <button type="button" id="lightbox-next">&gt;</button>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='pixel-editor.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='emoji-wc.js') }}"></script>
+</body>
+</html>
