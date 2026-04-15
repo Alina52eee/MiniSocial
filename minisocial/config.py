@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ load_dotenv(BASE_DIR / ".env")
 
 IS_PRODUCTION = os.getenv("FLASK_ENV", "").lower() == "production"
 
-USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_]{3,32}$")
 MAX_POST_CONTENT_LENGTH = 280
 MAX_POST_IMAGE_BYTES = 300 * 1024
 MAX_IMAGES_PER_POST = 4
@@ -49,5 +47,6 @@ def build_flask_config() -> dict:
         "REGISTRATION_ENABLED_DEFAULT": env_truthy("REGISTRATION_ENABLED_DEFAULT", True),
         "MASTER_ADMIN_USERNAME": master_username,
         "MASTER_ADMIN_PASSWORD": master_password,
+        "MINISOCIAL_AUTO_DEMO_SEED": env_truthy("MINISOCIAL_AUTO_DEMO_SEED", False),
         "MINISOCIAL_SKIP_AUTO_DEMO_SEED": env_truthy("MINISOCIAL_SKIP_AUTO_DEMO_SEED", False),
     }

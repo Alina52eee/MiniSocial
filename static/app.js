@@ -56,7 +56,8 @@ function rerenderGallery() {
   composeItems.forEach((item, idx) => {
     const div = document.createElement("div");
     div.className = "row";
-    div.innerHTML = `<strong>${item.kind}</strong> ${item.name || item.url || "(draw)"} <button type="button">Remove</button>`;
+    const kindLabel = item.kind === "file" ? "файл" : "ссылка";
+    div.innerHTML = `<strong>${kindLabel}</strong> ${item.name || item.url || "(рисунок)"} <button type="button">Удалить</button>`;
     div.querySelector("button").onclick = () => {
       composeItems = composeItems.filter((_, i) => i !== idx);
       rerenderGallery();
@@ -85,7 +86,7 @@ if (addFileBtn) {
 const addUrlBtn = document.getElementById("add-gallery-url");
 if (addUrlBtn) {
   addUrlBtn.onclick = () => {
-    const url = prompt("Image URL (http/https)");
+    const url = prompt("Ссылка на изображение (http/https)");
     if (!url) return;
     composeItems.push({ kind: "url", url });
     rerenderGallery();
@@ -187,7 +188,7 @@ composeModal?.addEventListener("click", (e) => {
 
 document.querySelectorAll("form[data-confirm]").forEach((f) => {
   f.addEventListener("submit", (e) => {
-    if (!confirm(f.dataset.confirm || "Are you sure?")) e.preventDefault();
+    if (!confirm(f.dataset.confirm || "Вы уверены?")) e.preventDefault();
   });
 });
 
@@ -201,7 +202,7 @@ document.querySelectorAll(".like-form").forEach((form) => {
     const payload = await res.json();
     if (!payload.ok) return;
     form.querySelector(".like-count").textContent = String(payload.likes);
-    form.querySelector(".like-btn").textContent = payload.liked ? "Unlike" : "Like";
+    form.querySelector(".like-btn").textContent = payload.liked ? "Убрать лайк" : "Лайк";
   });
 });
 

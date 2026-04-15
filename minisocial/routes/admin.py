@@ -4,7 +4,6 @@ from flask import flash, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
 
 from ..auth import admin_or_master_required, master_required
-from ..config import USERNAME_PATTERN
 from ..db import get_db_connection
 from ..services.feed import count_master_accounts
 
@@ -57,11 +56,14 @@ def register_admin_routes(app):
     @master_required
     def toggle_registration():
         action = request.form.get("action", "")
+        if action not in {"on", "off"}:
+            flash("Некорректное действие для регистрации.", "error")
+            return redirect(url_for("admin_page"))
         conn = get_db_connection(app.config["DATABASE_PATH"])
         _set_registration_enabled(conn, action == "on")
         conn.commit()
         conn.close()
-        flash("Registration settings updated.", "success")
+        flash("Настройки регистрации обновлены.", "success")
         return redirect(url_for("admin_page"))
 
     @app.post("/admin/create-user")
@@ -71,13 +73,13 @@ def register_admin_routes(app):
         password = request.form.get("password", "")
         role = request.form.get("role", "user")
         if role not in {"user", "admin"}:
-            flash("Invalid role.", "error")
+            flash("Некорректная роль.", "error")
             return redirect(url_for("admin_page"))
-        if not USERNAME_PATTERN.fullmatch(username):
-            flash("Invalid username.", "error")
+        if not username:
+            flash("Логин обязателен.", "error")
             return redirect(url_for("admin_page"))
         if len(password) < 8:
-            flash("Password too short.", "error")
+            flash("Слишком короткий пароль.", "error")
             return redirect(url_for("admin_page"))
         now = datetime.utcnow().isoformat(timespec="seconds")
         conn = get_db_connection(app.config["DATABASE_PATH"])
@@ -90,9 +92,9 @@ def register_admin_routes(app):
                 (username, generate_password_hash(password), role, now, now),
             )
             conn.commit()
-            flash("User created.", "success")
+            flash("Пользователь создан.", "success")
         except Exception:
-            flash("Username already exists.", "error")
+            flash("Такой логин уже существует.", "error")
         finally:
             conn.close()
         return redirect(url_for("admin_page"))
@@ -104,19 +106,19 @@ def register_admin_routes(app):
         user = _target_user(conn, user_id)
         if not user:
             conn.close()
-            flash("User not found.", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin_page"))
         if user["id"] == session.get("user_id") or user["role"] == "master":
             conn.close()
-            flash("This user cannot be archived.", "error")
+            flash("Этого пользователя нельзя архивировать.", "error")
             return redirect(url_for("admin_page"))
         if not _can_manage_actor(session.get("role"), user["role"]):
             conn.close()
-            flash("Insufficient permissions.", "error")
+            flash("Недостаточно прав.", "error")
             return redirect(url_for("admin_page"))
         if user["role"] == "master" and count_master_accounts(conn) <= 1:
             conn.close()
-            flash("Cannot archive the last master account.", "error")
+            flash("Нельзя архивировать последний мастер-аккаунт.", "error")
             return redirect(url_for("admin_page"))
 
         conn.execute("UPDATE users SET status='archived' WHERE id = ?", (user_id,))
@@ -132,7 +134,7 @@ def register_admin_routes(app):
         )
         conn.commit()
         conn.close()
-        flash("User archived.", "success")
+        flash("Пользователь отправлен в архив.", "success")
         return redirect(url_for("admin_page"))
 
     @app.post("/admin/users/<int:user_id>/restore")
@@ -142,11 +144,11 @@ def register_admin_routes(app):
         user = _target_user(conn, user_id)
         if not user:
             conn.close()
-            flash("User not found.", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin_page"))
         if not _can_manage_actor(session.get("role"), user["role"]):
             conn.close()
-            flash("Insufficient permissions.", "error")
+            flash("Недостаточно прав.", "error")
             return redirect(url_for("admin_page"))
 
         conn.execute("UPDATE users SET status='active' WHERE id = ?", (user_id,))
@@ -162,25 +164,25 @@ def register_admin_routes(app):
         )
         conn.commit()
         conn.close()
-        flash("User restored.", "success")
+        flash("Пользователь восстановлен.", "success")
         return redirect(url_for("admin_page"))
 
     @app.post("/admin/users/<int:user_id>/delete")
     @admin_or_master_required
     def delete_user(user_id: int):
         if session.get("role") != "master":
-            flash("Only master can permanently delete users.", "error")
+            flash("Только мастер может удалять пользователей навсегда.", "error")
             return redirect(url_for("admin_page"))
 
         conn = get_db_connection(app.config["DATABASE_PATH"])
         user = _target_user(conn, user_id)
         if not user:
             conn.close()
-            flash("User not found.", "error")
+            flash("Пользователь не найден.", "error")
             return redirect(url_for("admin_page"))
         if user["id"] == session.get("user_id") or user["role"] == "master":
             conn.close()
-            flash("This account cannot be deleted.", "error")
+            flash("Этот аккаунт нельзя удалить.", "error")
             return redirect(url_for("admin_page"))
 
         conn.execute(
@@ -198,5 +200,5 @@ def register_admin_routes(app):
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         conn.close()
-        flash("User deleted.", "success")
+        flash("Пользователь удалён.", "success")
         return redirect(url_for("admin_page"))

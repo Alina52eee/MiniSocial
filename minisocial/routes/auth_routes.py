@@ -4,7 +4,6 @@ from flask import flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..auth import login_required
-from ..config import USERNAME_PATTERN
 from ..db import get_db_connection
 
 
@@ -25,17 +24,17 @@ def register_auth_routes(app):
         if request.method == "POST":
             if not registration_enabled:
                 conn.close()
-                flash("Registration is currently disabled.", "error")
+                flash("Регистрация сейчас отключена.", "error")
                 return redirect(url_for("login"))
 
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
-            if not USERNAME_PATTERN.fullmatch(username):
-                flash("Username must be 3-32 chars: letters, numbers, underscore.", "error")
+            if not username:
+                flash("Логин обязателен.", "error")
                 conn.close()
                 return render_template("register.html", registration_enabled=registration_enabled)
             if len(password) < 8:
-                flash("Password must be at least 8 characters.", "error")
+                flash("Пароль должен быть не короче 8 символов.", "error")
                 conn.close()
                 return render_template("register.html", registration_enabled=registration_enabled)
 
@@ -49,10 +48,10 @@ def register_auth_routes(app):
                     (username, generate_password_hash(password), now, now),
                 )
                 conn.commit()
-                flash("Account created. You can now log in.", "success")
+                flash("Аккаунт создан. Теперь можно войти.", "success")
                 return redirect(url_for("login"))
             except Exception:
-                flash("Username is already taken.", "error")
+                flash("Этот логин уже занят.", "error")
         response = render_template("register.html", registration_enabled=registration_enabled)
         conn.close()
         return response
@@ -69,11 +68,11 @@ def register_auth_routes(app):
             ).fetchone()
             conn.close()
             if not user or not check_password_hash(user["password_hash"], password):
-                flash("Invalid username or password.", "error")
+                flash("Неверный логин или пароль.", "error")
                 return render_template("login.html")
             if user["status"] != "active":
                 session.clear()
-                flash("This account is archived.", "error")
+                flash("Этот аккаунт в архиве.", "error")
                 return render_template("login.html")
             session.clear()
             session["user_id"] = user["id"]

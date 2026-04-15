@@ -27,13 +27,12 @@ def create_app():
 
     with app.app_context():
         init_db(app)
-        if not app.config.get("MINISOCIAL_SKIP_AUTO_DEMO_SEED", False):
-            try:
-                from seed_demo import run_demo_seed
+        should_auto_seed = app.config.get("MINISOCIAL_AUTO_DEMO_SEED", False)
+        skip_auto_seed = app.config.get("MINISOCIAL_SKIP_AUTO_DEMO_SEED", False)
+        if should_auto_seed and not skip_auto_seed:
+            from seed_demo import run_demo_seed
 
-                run_demo_seed(app, auto=True)
-            except Exception:
-                pass
+            run_demo_seed(app, auto=True)
 
     register_feed_routes(app)
     register_auth_routes(app)

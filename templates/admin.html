@@ -1,53 +1,61 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Admin panel</h2>
+<h2>Панель администратора</h2>
 
 {% if can_manage_master_controls %}
 <section>
-  <h3>Registration</h3>
+  <h3>Регистрация</h3>
   <form action="{{ url_for('toggle_registration') }}" method="post">
     <input type="hidden" name="action" value="{{ 'off' if registration_enabled else 'on' }}">
-    <button type="submit">{{ 'Disable' if registration_enabled else 'Enable' }} registration</button>
+    <button type="submit">{{ 'Отключить' if registration_enabled else 'Включить' }} регистрацию</button>
   </form>
 </section>
 
 <section>
-  <h3>Create user</h3>
+  <h3>Создать пользователя</h3>
   <form action="{{ url_for('create_user') }}" method="post">
-    <input name="username" placeholder="username" required>
-    <input type="password" name="password" placeholder="password" required>
+    <input name="username" placeholder="логин" required>
+    <input type="password" name="password" placeholder="пароль" required>
     <select name="role">
-      <option value="user">user</option>
-      <option value="admin">admin</option>
+      <option value="user">пользователь</option>
+      <option value="admin">админ</option>
     </select>
-    <button type="submit">Create</button>
+    <button type="submit">Создать</button>
   </form>
 </section>
 {% endif %}
 
 <table>
   <thead>
-    <tr><th>ID</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+    <tr><th>ID</th><th>Логин</th><th>Роль</th><th>Статус</th><th>Действия</th></tr>
   </thead>
   <tbody>
     {% for user in users %}
       <tr>
         <td>{{ user.id }}</td>
         <td>{{ user.username }}</td>
-        <td>{{ user.role }}</td>
-        <td>{{ user.status }}</td>
+        <td>
+          {{
+            "мастер"
+            if user.role == "master"
+            else "админ"
+            if user.role == "admin"
+            else "пользователь"
+          }}
+        </td>
+        <td>{{ "активен" if user.status == "active" else "в архиве" }}</td>
         <td class="row">
           {% if user.status == 'active' %}
-          <form action="{{ url_for('archive_user', user_id=user.id) }}" method="post" data-confirm="Archive user?">
-            <button type="submit">Archive</button>
+          <form action="{{ url_for('archive_user', user_id=user.id) }}" method="post" data-confirm="Архивировать пользователя?">
+            <button type="submit">В архив</button>
           </form>
           {% else %}
-          <form action="{{ url_for('restore_user', user_id=user.id) }}" method="post" data-confirm="Restore user?">
-            <button type="submit">Restore</button>
+          <form action="{{ url_for('restore_user', user_id=user.id) }}" method="post" data-confirm="Восстановить пользователя?">
+            <button type="submit">Восстановить</button>
           </form>
           {% endif %}
-          <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" data-confirm="Delete user permanently?">
-            <button type="submit">Delete</button>
+          <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" data-confirm="Удалить пользователя навсегда?">
+            <button type="submit">Удалить</button>
           </form>
         </td>
       </tr>

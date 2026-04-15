@@ -28,23 +28,29 @@ def register_post_routes(app):
     def create_post():
         content = request.form.get("content", "").strip()
         if not content:
-            flash("Post text cannot be empty.", "error")
+            flash("Текст поста не может быть пустым.", "error")
             return redirect(url_for("feed_newest"))
         if len(content) > MAX_POST_CONTENT_LENGTH:
-            flash("Post text is too long.", "error")
+            flash("Текст поста слишком длинный.", "error")
             return redirect(url_for("feed_newest"))
 
-        gallery_count = min(
-            int(request.form.get("gallery_count", "0") or 0),
-            MAX_IMAGES_PER_POST,
-        )
+        raw_gallery_count = request.form.get("gallery_count", "0")
+        try:
+            gallery_count = int(raw_gallery_count or 0)
+        except (TypeError, ValueError):
+            flash("Некорректная конфигурация галереи.", "error")
+            return redirect(url_for("feed_newest"))
+        if gallery_count < 0:
+            flash("Некорректная конфигурация галереи.", "error")
+            return redirect(url_for("feed_newest"))
+        gallery_count = min(gallery_count, MAX_IMAGES_PER_POST)
         items = []
         for i in range(gallery_count):
             kind = request.form.get(f"gallery_kind_{i}", "")
             if kind == "url":
                 value = request.form.get(f"gallery_url_{i}", "").strip()
                 if not _valid_image_url(value):
-                    flash("Invalid image URL.", "error")
+                    flash("Некорректный URL изображения.", "error")
                     return redirect(url_for("feed_newest"))
                 items.append({"position": i, "image_url": value, "image_blob": None, "image_mime": None})
             elif kind == "file":
@@ -53,11 +59,11 @@ def register_post_routes(app):
                     continue
                 mime = (upload.mimetype or "").lower()
                 if mime not in ALLOWED_IMAGE_MIME_TYPES:
-                    flash("Unsupported image format.", "error")
+                    flash("Неподдерживаемый формат изображения.", "error")
                     return redirect(url_for("feed_newest"))
                 data = upload.read(MAX_POST_IMAGE_BYTES + 1)
                 if len(data) > MAX_POST_IMAGE_BYTES:
-                    flash("Uploaded image is too large.", "error")
+                    flash("Загруженное изображение слишком большое.", "error")
                     return redirect(url_for("feed_newest"))
                 items.append({"position": i, "image_url": None, "image_blob": data, "image_mime": mime})
 
@@ -81,7 +87,7 @@ def register_post_routes(app):
             )
         conn.commit()
         conn.close()
-        flash("Post created.", "success")
+        flash("Пост создан.", "success")
         return redirect(url_for("feed_newest"))
 
     @app.post("/delete-post/<int:post_id>")
@@ -91,17 +97,17 @@ def register_post_routes(app):
         post = conn.execute("SELECT author_id FROM posts WHERE id = ?", (post_id,)).fetchone()
         if not post:
             conn.close()
-            flash("Post not found.", "error")
+            flash("Пост не найден.", "error")
             return redirect(url_for("feed_newest"))
         if not current_user_can_manage_post(post["author_id"]):
             conn.close()
-            flash("You cannot delete this post.", "error")
+            flash("Вы не можете удалить этот пост.", "error")
             return redirect(url_for("feed_newest"))
 
         conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         conn.commit()
         conn.close()
-        flash("Post deleted.", "success")
+        flash("Пост удалён.", "success")
         return redirect(url_for("feed_newest"))
 
     @app.post("/like-post/<int:post_id>")
@@ -111,7 +117,7 @@ def register_post_routes(app):
         exists = conn.execute("SELECT id FROM posts WHERE id = ?", (post_id,)).fetchone()
         if not exists:
             conn.close()
-            flash("Post not found.", "error")
+            flash("Пост не найден.", "error")
             return redirect(url_for("feed_newest"))
         toggle_post_like(conn, post_id, session["user_id"])
         conn.commit()

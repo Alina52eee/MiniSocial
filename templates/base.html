@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,22 +18,31 @@
     {% if current_user.is_authenticated %}
       <div class="user-card">
         {% if current_user.id %}
-          <img class="avatar" src="{{ url_for('user_avatar', user_id=current_user.id) }}" alt="avatar" onerror="this.replaceWith(document.createTextNode('avatar: none'));">
+          <img class="avatar" src="{{ url_for('user_avatar', user_id=current_user.id) }}" alt="аватар" onerror="this.replaceWith(document.createTextNode('аватар: нет'));">
         {% endif %}
-        <p>@{{ current_user.username }} ({{ current_user.role }})</p>
+        <p>
+          @{{ current_user.username }}
+          ({{
+            "мастер"
+            if current_user.role == "master"
+            else "админ"
+            if current_user.role == "admin"
+            else "пользователь"
+          }})
+        </p>
       </div>
       <form id="avatar-upload-form" action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data">
         <input type="file" name="avatar" id="avatar-input" accept="image/png">
       </form>
-      <button type="button" id="open-avatar-editor">Draw avatar 8x8</button>
-      <a href="{{ url_for('feed_newest') }}">Feed</a>
+      <button type="button" id="open-avatar-editor">Нарисовать аватар 8x8</button>
+      <a href="{{ url_for('feed_newest') }}">Лента</a>
       {% if current_user.role in ["admin", "master"] %}
-        <a href="{{ url_for('admin_page') }}">Admin</a>
+        <a href="{{ url_for('admin_page') }}">Админка</a>
       {% endif %}
-      <form action="{{ url_for('logout') }}" method="post"><button>Log out</button></form>
+      <form action="{{ url_for('logout') }}" method="post"><button>Выйти</button></form>
     {% else %}
-      <a href="{{ url_for('login') }}">Login</a>
-      <a href="{{ url_for('register') }}">Register</a>
+      <a href="{{ url_for('login') }}">Войти</a>
+      <a href="{{ url_for('register') }}">Регистрация</a>
     {% endif %}
     <button type="button" class="theme-toggle" id="theme-toggle" aria-checked="false" aria-label="Переключить тему">Тема: светлая</button>
   </aside>
@@ -53,20 +62,20 @@
 
   <div id="pixel-editor-modal" class="modal hidden">
     <div class="modal-content">
-      <h3>Pixel editor 8x8</h3>
+      <h3>Пиксельный редактор 8x8</h3>
       <canvas id="pixel-canvas" width="256" height="256"></canvas>
       <input type="color" id="pixel-color" value="#000000">
       <div class="row">
-        <button type="button" id="pixel-clear">Clear</button>
-        <button type="button" id="pixel-save">Save PNG</button>
-        <button type="button" id="pixel-close">Close</button>
+        <button type="button" id="pixel-clear">Очистить</button>
+        <button type="button" id="pixel-save">Сохранить PNG</button>
+        <button type="button" id="pixel-close">Закрыть</button>
       </div>
     </div>
   </div>
 
   <div id="lightbox" class="lightbox hidden">
     <button type="button" id="lightbox-prev">&lt;</button>
-    <img id="lightbox-image" alt="preview">
+    <img id="lightbox-image" alt="предпросмотр">
     <button type="button" id="lightbox-next">&gt;</button>
   </div>
 

@@ -80,10 +80,10 @@ document.getElementById("pixel-save")?.addEventListener("click", () => {
           if (res.ok) {
             window.location.reload();
           } else {
-            alert(`Avatar save failed (${res.status}). Check PNG 8x8 requirements.`);
+            alert(`Не удалось сохранить аватар (${res.status}). Проверьте, что PNG ровно 8x8.`);
           }
         })
-        .catch(() => alert("Avatar save failed."));
+        .catch(() => alert("Не удалось сохранить аватар."));
     }
     modal?.classList.add("hidden");
   }, "image/png");
